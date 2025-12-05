@@ -81,12 +81,24 @@
               id="settingsNewCategoryInput"
               type="text"
               class="add-input"
-              placeholder="Add a favorite type (Candy, Movie…) "
+              placeholder="Add a favorite type (Candy, Movie…)"
             />
             <button id="settingsAddCategoryBtn" class="small-btn">Add</button>
           </div>
 
           <div id="categoriesList" class="manage-list"></div>
+        </div>
+
+        <!-- Import / Export -->
+        <div class="settings-section">
+          <h3>Backup & transfer</h3>
+          <p class="widget-footer-text">
+            Export your Family Favorites as JSON, or import a backup.
+          </p>
+          <div class="settings-inline-add">
+            <button id="exportDataBtn" class="small-btn">Export data</button>
+            <button id="importDataBtn" class="small-btn secondary-btn">Import data</button>
+          </div>
         </div>
       </div>
 
@@ -95,6 +107,9 @@
         <button id="randomPersonBtn" class="small-btn secondary-btn">Random person</button>
         <button id="randomFavoriteBtn" class="small-btn secondary-btn">Random favorite</button>
       </div>
+
+      <!-- Backup reminder -->
+      <div id="backupReminder" class="backup-reminder"></div>
 
       <div class="footer-text-blocks">
         <span class="widget-footer-text">
