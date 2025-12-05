@@ -2,6 +2,7 @@
 const FF_PEOPLE_KEY = "familyFavorites_people";
 const FF_CATEGORIES_KEY = "familyFavorites_categories";
 const FF_FAVORITES_KEY = "familyFavorites_favorites";
+const FF_LAST_BACKUP_KEY = "familyFavorites_lastBackup";
 
 let people = [];      // {id, name, archived: boolean}
 let categories = [];  // {id, name, archived: boolean}
@@ -134,6 +135,63 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
+function formatLocalDateTime(isoString) {
+  const d = new Date(isoString);
+  if (isNaN(d.getTime())) return "Unknown time";
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+/* ---------- Backup / Reminder ---------- */
+
+function recordBackupTime() {
+  const nowIso = new Date().toISOString();
+  safeSet(FF_LAST_BACKUP_KEY, nowIso);
+}
+
+function getLastBackupTime() {
+  const raw = safeGet(FF_LAST_BACKUP_KEY);
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return null;
+  return d;
+}
+
+function updateBackupReminder() {
+  const reminder = document.getElementById("backupReminder");
+  if (!reminder) return;
+
+  const lastBackup = getLastBackupTime();
+  const now = new Date();
+
+  if (!lastBackup) {
+    reminder.innerHTML =
+      'No backup yet. <button id="backupNowBtn" class="small-btn secondary-btn">Backup now</button>';
+  } else {
+    const diffMs = now - lastBackup;
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    if (diffMs > oneDayMs) {
+      reminder.innerHTML =
+        'It’s been more than a day since your last backup (' +
+        formatLocalDateTime(lastBackup.toISOString()) +
+        '). <button id="backupNowBtn" class="small-btn secondary-btn">Backup now</button>';
+    } else {
+      reminder.textContent = "Last backup: " + formatLocalDateTime(lastBackup.toISOString());
+    }
+  }
+
+  // Wire the backupNow button if present
+  const backupNowBtn = document.getElementById("backupNowBtn");
+  if (backupNowBtn) {
+    backupNowBtn.addEventListener("click", exportFamilyFavoritesData);
+  }
+}
+
 /* ---------- Rendering: Category Select & Hint ---------- */
 
 function renderCategorySelect() {
@@ -191,12 +249,12 @@ function renderFavoritesList() {
   const activePeople = getActivePeople();
 
   if (!currentCategoryId) {
-    list.innerHTML = "<p class=\"widget-footer-text\">No favorite type selected yet.</p>";
+    list.innerHTML = '<p class="widget-footer-text">No favorite type selected yet.</p>';
     return;
   }
 
   if (activePeople.length === 0) {
-    list.innerHTML = "<p class=\"widget-footer-text\">No family members yet. Add one below.</p>";
+    list.innerHTML = '<p class="widget-footer-text">No family members yet. Add one below.</p>';
     return;
   }
 
@@ -264,7 +322,6 @@ function handleAddPersonFromSettings() {
 }
 
 function addPerson(name) {
-  // create unique id
   const id = "person_" + Date.now() + "_" + Math.floor(Math.random() * 9999);
   people.push({ id, name, archived: false });
   savePeople();
@@ -305,7 +362,7 @@ function renderPeopleManageList() {
   if (!container) return;
 
   if (people.length === 0) {
-    container.innerHTML = "<p class=\"widget-footer-text\">No family members yet.</p>";
+    container.innerHTML = '<p class="widget-footer-text">No family members yet.</p>';
     return;
   }
 
@@ -387,7 +444,7 @@ function renderCategoriesManageList() {
   if (!container) return;
 
   if (categories.length === 0) {
-    container.innerHTML = "<p class=\"widget-footer-text\">No favorite types yet.</p>";
+    container.innerHTML = '<p class="widget-footer-text">No favorite types yet.</p>';
     return;
   }
 
@@ -528,7 +585,6 @@ function randomPerson() {
 }
 
 function randomFavorite() {
-  // pool of (cat, person, favorite) where favorite is non-empty, and both active
   const activePeople = getActivePeople();
   const activeCats = getActiveCategories();
 
@@ -583,6 +639,82 @@ function randomFavorite() {
   showToast("Random favorite chosen!");
 }
 
+/* ---------- Import / Export ---------- */
+
+function exportFamilyFavoritesData() {
+  const backup = {
+    people,
+    categories,
+    favorites
+  };
+
+  const json = JSON.stringify(backup);
+
+  const onSuccess = () => {
+    recordBackupTime();
+    updateBackupReminder();
+    showToast("Family Favorites data copied to clipboard.");
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(json)
+      .then(onSuccess)
+      .catch(() => {
+        window.prompt("Copy your Family Favorites data:", json);
+        recordBackupTime();
+        updateBackupReminder();
+        showToast("Backup exported (copy from the prompt).");
+      });
+  } else {
+    window.prompt("Copy your Family Favorites data:", json);
+    recordBackupTime();
+    updateBackupReminder();
+    showToast("Backup exported (copy from the prompt).");
+  }
+}
+
+function importFamilyFavoritesData() {
+  const raw = window.prompt(
+    "Paste your Family Favorites backup JSON here.\n\nThis will replace your current data:"
+  );
+  if (!raw) return;
+
+  try {
+    const parsed = JSON.parse(raw);
+
+    if (
+      !parsed ||
+      !Array.isArray(parsed.people) ||
+      !Array.isArray(parsed.categories) ||
+      typeof parsed.favorites !== "object"
+    ) {
+      showToast("Invalid backup format.");
+      return;
+    }
+
+    people = parsed.people;
+    categories = parsed.categories;
+    favorites = parsed.favorites;
+
+    savePeople();
+    saveCategories();
+    saveFavorites();
+
+    const activeCats = getActiveCategories();
+    currentCategoryId = activeCats.length > 0 ? activeCats[0].id : null;
+
+    renderPeopleManageList();
+    renderCategoriesManageList();
+    renderCategorySelect();
+    updateBackupReminder();
+
+    showToast("Family Favorites data imported.");
+  } catch (e) {
+    console.error("Error importing data:", e);
+    showToast("Error importing data. Check the JSON and try again.");
+  }
+}
+
 /* ---------- Event wiring ---------- */
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -592,6 +724,7 @@ document.addEventListener("DOMContentLoaded", function () {
   renderCategorySelect();
   renderPeopleManageList();
   renderCategoriesManageList();
+  updateBackupReminder();
 
   // Category select change
   const catSelect = document.getElementById("categorySelect");
@@ -645,6 +778,17 @@ document.addEventListener("DOMContentLoaded", function () {
         handleAddCategoryFromSettings();
       }
     });
+  }
+
+  // Import / Export buttons
+  const exportBtn = document.getElementById("exportDataBtn");
+  if (exportBtn) {
+    exportBtn.addEventListener("click", exportFamilyFavoritesData);
+  }
+
+  const importBtn = document.getElementById("importDataBtn");
+  if (importBtn) {
+    importBtn.addEventListener("click", importFamilyFavoritesData);
   }
 
   setupSettingsToggle();
