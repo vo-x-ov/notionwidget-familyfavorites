@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Family Favorites</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="widget-container">
+
+    <!-- HEADER -->
+    <header class="widget-header">
+      <div class="widget-title">
+        <span class="widget-icon">👨‍👩‍👧‍👦</span>
+        <div>
+          <h1>Family Favorites</h1>
+          <p class="widget-subtitle">Know everyone’s “yes” in one glance.</p>
+        </div>
+      </div>
+
+      <div class="widget-controls">
+        <div class="widget-select-wrapper">
+          <label for="categorySelect">Favorite type:</label>
+          <select id="categorySelect"></select>
+        </div>
+
+        <div class="widget-control-buttons">
+          <button id="randomCategoryBtn" class="small-btn">Random type</button>
+          <button id="settingsToggle" class="settings-btn" aria-expanded="false" title="Manage people & types">⚙️</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="widget-body">
+      <p id="categoryHint" class="category-hint"></p>
+
+      <div id="favoritesList" class="favorites-list"></div>
+
+      <div class="add-person-row">
+        <input
+          id="newPersonInput"
+          type="text"
+          class="add-input"
+          placeholder="Add a family member (press +)"
+        />
+        <button id="addPersonBtn" class="small-btn">+</button>
+      </div>
+
+      <div id="randomHighlight" class="random-highlight"></div>
+    </main>
+
+    <!-- SETTINGS + FOOTER -->
+    <footer class="widget-footer">
+      <div id="settingsPanel" class="settings-panel">
+
+        <!-- People management -->
+        <div class="settings-section">
+          <h3>Family members</h3>
+
+          <div class="settings-inline-add">
+            <input
+              id="settingsNewPersonInput"
+              type="text"
+              class="add-input"
+              placeholder="Add a family member"
+            />
+            <button id="settingsAddPersonBtn" class="small-btn">Add</button>
+          </div>
+
+          <div id="peopleList" class="manage-list"></div>
+        </div>
+
+        <!-- Categories management -->
+        <div class="settings-section">
+          <h3>Favorite types</h3>
+
+          <div class="settings-inline-add">
+            <input
+              id="settingsNewCategoryInput"
+              type="text"
+              class="add-input"
+              placeholder="Add a favorite type (Candy, Movie…) "
+            />
+            <button id="settingsAddCategoryBtn" class="small-btn">Add</button>
+          </div>
+
+          <div id="categoriesList" class="manage-list"></div>
+        </div>
+      </div>
+
+      <!-- Footer actions -->
+      <div class="footer-actions">
+        <button id="randomPersonBtn" class="small-btn secondary-btn">Random person</button>
+        <button id="randomFavoriteBtn" class="small-btn secondary-btn">Random favorite</button>
+      </div>
+
+      <div class="footer-text-blocks">
+        <span class="widget-footer-text">
+          Little favorites make big memories.
+        </span>
+      </div>
+    </footer>
+
+    <div id="toast" class="toast"></div>
+
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
