@@ -122,6 +122,25 @@
 
   </div>
 
+  <!-- Magical backup modal -->
+  <div id="backupModal" class="backup-modal-backdrop">
+    <div class="backup-modal">
+      <h2 class="backup-modal-title">Backup JSON</h2>
+      <p class="backup-modal-text">
+        Copy this backup and store it somewhere safe (Notion page, file, etc.).
+      </p>
+      <textarea
+        id="backupModalTextarea"
+        class="backup-modal-textarea"
+        readonly
+      ></textarea>
+      <div class="backup-modal-actions">
+        <button id="backupModalSelectBtn" class="small-btn">Select all</button>
+        <button id="backupModalCloseBtn" class="small-btn secondary-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
