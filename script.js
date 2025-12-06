@@ -192,6 +192,29 @@ function updateBackupReminder() {
   }
 }
 
+/* ---------- Magical Backup Modal ---------- */
+
+function openBackupModal(json) {
+  const backdrop = document.getElementById("backupModal");
+  const textarea = document.getElementById("backupModalTextarea");
+  if (!backdrop || !textarea) return;
+
+  textarea.value = json;
+  backdrop.classList.add("visible");
+
+  // Optional: auto-select content for easy copy
+  setTimeout(() => {
+    textarea.focus();
+    textarea.select();
+  }, 20);
+}
+
+function closeBackupModal() {
+  const backdrop = document.getElementById("backupModal");
+  if (!backdrop) return;
+  backdrop.classList.remove("visible");
+}
+
 /* ---------- Rendering: Category Select & Hint ---------- */
 
 function renderCategorySelect() {
@@ -611,7 +634,7 @@ function randomFavorite() {
         pool.push({
           categoryId: catId,
           categoryName: activeCatMap[catId].name,
-          personId: personId,
+          personId,
           personName: activePeopleMap[personId].name,
           value: val
         });
@@ -648,28 +671,30 @@ function exportFamilyFavoritesData() {
     favorites
   };
 
-  const json = JSON.stringify(backup);
+  // Prettified JSON for easier reading
+  const json = JSON.stringify(backup, null, 2);
 
-  const onSuccess = () => {
+  const afterExport = (message) => {
     recordBackupTime();
     updateBackupReminder();
-    showToast("Family Favorites data copied to clipboard.");
+    if (message) showToast(message);
   };
 
+  // Try clipboard first
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(json)
-      .then(onSuccess)
+      .then(() => {
+        afterExport("Family Favorites data copied to clipboard.");
+      })
       .catch(() => {
-        window.prompt("Copy your Family Favorites data:", json);
-        recordBackupTime();
-        updateBackupReminder();
-        showToast("Backup exported (copy from the prompt).");
+        // Clipboard blocked (e.g., Notion Desktop) → show modal
+        openBackupModal(json);
+        afterExport("Backup ready – copy from the panel.");
       });
   } else {
-    window.prompt("Copy your Family Favorites data:", json);
-    recordBackupTime();
-    updateBackupReminder();
-    showToast("Backup exported (copy from the prompt).");
+    // Clipboard API not available → modal fallback
+    openBackupModal(json);
+    afterExport("Backup ready – copy from the panel.");
   }
 }
 
@@ -791,6 +816,32 @@ document.addEventListener("DOMContentLoaded", function () {
     importBtn.addEventListener("click", importFamilyFavoritesData);
   }
 
+  // Settings panel
   setupSettingsToggle();
   setupRandomButtons();
+
+  // Backup modal controls
+  const backupModalCloseBtn = document.getElementById("backupModalCloseBtn");
+  const backupModalSelectBtn = document.getElementById("backupModalSelectBtn");
+  const backupBackdrop = document.getElementById("backupModal");
+  const backupTextarea = document.getElementById("backupModalTextarea");
+
+  if (backupModalCloseBtn) {
+    backupModalCloseBtn.addEventListener("click", closeBackupModal);
+  }
+
+  if (backupModalSelectBtn && backupTextarea) {
+    backupModalSelectBtn.addEventListener("click", () => {
+      backupTextarea.focus();
+      backupTextarea.select();
+    });
+  }
+
+  if (backupBackdrop) {
+    backupBackdrop.addEventListener("click", (e) => {
+      if (e.target === backupBackdrop) {
+        closeBackupModal();
+      }
+    });
+  }
 });
